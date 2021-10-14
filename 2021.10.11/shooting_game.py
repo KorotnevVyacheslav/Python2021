@@ -25,7 +25,7 @@ NUMBER_OF_BALLS_UPDATED = 10
 SUM = 0
 NAME = "Vyacheslav"
 
-#if input("Is your name Vyacheslav? Y/N") == "N": NAME=input("enter your name: ")
+if input("Is your name Vyacheslav? Y/N") == "N": NAME=input("enter your name: ")
 
 
 class Ball:
@@ -136,7 +136,7 @@ class Ball_updated:
 
 
 class Defender:
-    ''' Class of balls '''
+    ''' Class of defenders '''
 
     def __init__(self, x0 , y0):
         ''' Initialization
@@ -190,22 +190,27 @@ class Defender:
 
 def checking(pool, pool2):
     ''' Check ticking the ball
-    x,y - mouse position
+    pool - pool of targets
+    pool2 - pool of defenders
     '''
-
-    sum=0
-    for ball in pool:
-        for defender in pool2:
-            x = defender.x
-            y = defender.y
-            if ball.x - ball.r <= x and ball.x + ball.r >= x and ball.y - ball.r <= y and ball.y + ball.r >= y:
-                sum += ball.points
-                k=True
-                pool.remove(ball)
-                pool2.remove(defender)
-            else:
-                if y < 20: pool2.remove(defender)
+    k = True
+    sum = 0
+    for defender in pool2:
+        for ball in pool:
+            if k:
+                x = defender.x
+                y = defender.y
+                if ball.x - ball.r <= x and ball.x + ball.r >= x and ball.y - ball.r <= y and ball.y + ball.r >= y:
+                    sum += ball.points
+                    k = False
+                    pool.remove(ball)
+                    pool2.remove(defender)
+        k = True
+    for defender in pool2:
+        y = defender.y
+        if y < 20: pool2.remove(defender)
     return sum
+
 
 def checking2(pool):
     ''' Check ticking the ball
@@ -215,22 +220,20 @@ def checking2(pool):
     for ball in pool:
         if ball.y + ball.r >= 900:
             k = True
-            pool.remove(ball)
+            #pool.remove(ball)
     return k
 
+def updating_pool(n1 , n2):
+    pool = [Ball()] * (n1 + n2)
+    for i in range(n1):
+        pool[i] = Ball()
+    for i in range(n1, n2 + n1, 1):
+        pool[i] = Ball_updated()
+    return pool
 
-
-
-pool = [Ball()] * (NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS)
-
-for i in range(NUMBER_OF_BALLS):
-    pool[i] = Ball()
-
-for i in range(NUMBER_OF_BALLS, NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS, 1):
-    pool[i] = Ball_updated()
+pool = updating_pool(NUMBER_OF_BALLS , NUMBER_OF_BALLS_UPDATED)
 
 pool2 = []
-
 
 
 pygame.display.update()
@@ -290,6 +293,7 @@ while not finished:
             pool[i] = Ball()
             for j in range(rounds):
                 pool[i].vy *= 1.5
+                if abs(pool[i].vy) > 50: pool[i].vy = 50
             rounds +=  1
 
         for i in range(NUMBER_OF_BALLS, NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS, 1):
