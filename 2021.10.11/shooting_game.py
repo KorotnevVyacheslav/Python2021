@@ -1,5 +1,6 @@
 import pygame
 import math
+import json
 from pygame.draw import *
 from random import randint, choice
 pygame.init()
@@ -25,7 +26,8 @@ NUMBER_OF_BALLS_UPDATED = 10
 SUM = 0
 NAME = "Vyacheslav"
 
-if input("Is your name Vyacheslav? Y/N") == "N": NAME=input("enter your name: ")
+if input("Is your name Vyacheslav? Y/N  ") == "N": NAME = input("enter your name: ")
+
 
 
 class Ball:
@@ -243,60 +245,90 @@ TIME = 0
 
 rounds = 1
 p = False
+m = False
 while not finished:
     clock.tick(FPS)
+    pygame.display.update()
+    screen.fill(BLACK)
+    rect(screen, WHITE ,( 0, 900, 1200 , 100))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
             pool2.append(Defender(event.pos[0] , event.pos[1]))
 
-    for ball in pool:
-        ball.draw(screen)
-        ball.move( deltat )
-        ball.collision(0 , 1200 , 0 , 900)
-
-    for ball in pool2:
-        ball.draw(screen)
-        ball.move( deltat )
-        ball.collision(0 , 1200 , 0 , 900)
-
-    pygame.display.update()
-    screen.fill(BLACK)
-    rect(screen, WHITE ,( 0, 900, 1200 , 100))
-
-    SUM += checking(pool, pool2)
-
     text_points = font.render(str(SUM), True, (0, 100, 0))
     screen.blit(text_points,(100,920))
 
     text_time = font.render(str(TIME), True, (0, 100, 0))
-    screen.blit(text_time,(300,920))
+    screen.blit(text_time,(500,920))
 
-    TIME+=1/FPS
-    TIME = float('{:.2f}'.format(TIME))
-    SUM -=1/FPS*1000
-    SUM = float('{:.0f}'.format(SUM))
+    if not m:
+        for ball in pool:
+            ball.draw(screen)
+            ball.move( deltat )
+            ball.collision(0 , 1200 , 0 , 900)
 
-    if checking2(pool):
-        text = font.render("GAME OVER! CONGRATULATIONS!", True, (0, 100, 0))
-        screen.blit(text,(200,500))
-        f = open('winners2.txt','a')
-        f.write(NAME + " " + str(SUM) + '\n')
-        f.close()
-        finished = True
+        for ball in pool2:
+            ball.draw(screen)
+            ball.move( deltat )
+            ball.collision(0 , 1200 , 0 , 900)
 
-    if len(pool) == 0:
-        pool = [Ball()] * (NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS)
 
-        for i in range(NUMBER_OF_BALLS):
-            pool[i] = Ball()
-            for j in range(rounds):
-                pool[i].vy *= 1.5
-                if abs(pool[i].vy) > 50: pool[i].vy = 50
-            rounds +=  1
+        SUM += checking(pool, pool2)
 
-        for i in range(NUMBER_OF_BALLS, NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS, 1):
-            pool[i] = Ball_updated()
+        TIME+=1/FPS
+        TIME = float('{:.2f}'.format(TIME))
+        SUM -=1/FPS*1000
+        SUM = float('{:.0f}'.format(SUM))
+
+        if checking2(pool):
+            f = open('winners2.txt','a')
+            f.write(NAME + " " + str(SUM) + '\n')
+            f.close()
+
+            with open("winners_data.json", "r") as write_file:
+                loaded = json.load(write_file)
+
+            loaded.append( {'name': NAME, 'points': SUM } )
+
+
+            for i in range(len(loaded) - 1 ):
+                k = i
+                for j in ( i + 1 , len(loaded) - 1):
+                    dict1 = loaded[k]
+                    dict2 = loaded[j]
+                    if dict1.get('points', 0) < dict2.get('points', 0): k = j
+                c = loaded[k]
+                loaded[k] = loaded[i]
+                loaded[i] = c
+
+            with open("winners_data.json", "w") as write_file:
+                json.dump(loaded,  write_file)
+
+            m = True
+            #finished = True
+
+        if len(pool) == 0:
+            pool = [Ball()] * (NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS)
+
+            for i in range(NUMBER_OF_BALLS):
+                pool[i] = Ball()
+                for j in range(rounds):
+                    pool[i].vy *= 1.5
+                    if abs(pool[i].vy) > 50: pool[i].vy = 50
+                rounds +=  1
+
+            for i in range(NUMBER_OF_BALLS, NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS, 1):
+                pool[i] = Ball_updated()
+    if m:
+            text = font.render("YOU WON! CONGRATULATIONS!", True, (0, 100, 0))
+            screen.blit(text,(200,800))
+            with open("winners_data.json", "r") as write_file:
+                loaded = json.load(write_file)
+            for i in range(min(len(loaded) , 5)):
+                text = font.render( loaded[i].get('name', 0) + "   " + str(loaded[i].get('points', 0)), True, (0, 100, 0))
+                screen.blit(text,(200 , 100 + i * 100))
+
 
 pygame.quit()
