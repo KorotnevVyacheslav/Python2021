@@ -9,7 +9,7 @@ FPS = 30
 screen = pygame.display.set_mode((1200, 1000))
 font = pygame.font.Font(None, 72)
 
-deltat = 0.1
+deltat = 0.1 #normalization of time
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -21,17 +21,17 @@ BLACK = (0, 0, 0)
 WHITE=(255,255,255)
 COLOURS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
-NUMBER_OF_BALLS = 10
-NUMBER_OF_BALLS_UPDATED = 10
+NUMBER_OF_TARGETS = 10
+NUMBER_OF_UPDATED_TARGETS = 10
 SUM = 0
 NAME = "Vyacheslav"
 
-if input("Is your name Vyacheslav? Y/N  ") == "N": NAME = input("enter your name: ")
+if input("Is your name Vyacheslav? Y/N  ") == "N": NAME = input("Enter your name: ") #requesting name
 
 
 
-class Ball:
-    ''' Class of balls '''
+class Target:
+    ''' Class of balls that is need to be defended '''
 
     def __init__(self):
         ''' Initialization
@@ -53,7 +53,7 @@ class Ball:
         self.points = int( 100000 / self.r )
 
     def draw(self, surface):
-        ''' Draw ball
+        ''' Drawing ball
         x,y - position
         r - radius
         coulour - colour of ball
@@ -75,6 +75,7 @@ class Ball:
         ''' Check collision with walls
         width_left, width_right - coordinates of vertical walls
         height_left, height_right - coordinates of gorizontal(sorry) walls
+        there is no collision with lower wall - the end of the game
         '''
 
         if self.x - self.r<= width_left: self.vx *= -1
@@ -82,14 +83,14 @@ class Ball:
         if self.y - self.r <= height_left: self.vy *= -1
 
 
-class Ball_updated:
-    ''' Class of updated balls '''
+class Target_updated:
+    ''' Class of updated targets that is need to be defended '''
 
     def __init__(self):
         ''' Initialization
         x,y - position
         vx,vy - velocity
-        r - radius
+        r - lenght of the square edge
         t - parameter for geometry
         coulour - colour of ball
         points - cost of ball
@@ -109,13 +110,13 @@ class Ball_updated:
         ''' Draw ball
         x,y - position
         r - radius
-        coulour - colour of ball
+        coulour - colour of square
         '''
 
         rect(surface, self.colour, (self.x - self.r, self.y - self.r, 2 * self.r , 2 * self.r))
 
     def move(self, dt):
-        ''' Move ball
+        ''' Move square
         x,y - position
         vx,vy - velocity
         dt - changing of time
@@ -129,6 +130,7 @@ class Ball_updated:
         ''' Check collision with walls
         width_left, width_right - coordinates of vertical walls
         height_left, height_right - coordinates of gorizontal(sorry) walls
+        there is no collision with lower wall - the end of the game
         '''
 
         if self.x - self.r<= width_left: self.vx *= -1
@@ -142,11 +144,11 @@ class Defender:
 
     def __init__(self, x0 , y0):
         ''' Initialization
+        x0, y0 - coordinates of mouse to determine the direction
         x,y - position
         vx,vy - velocity
         r - radius
         coulour - colour of ball
-        points - cost of ball
         '''
 
         self.x = 600
@@ -159,7 +161,8 @@ class Defender:
         self.colour = WHITE
 
     def draw(self, surface):
-        ''' Draw ball
+        ''' Draw defender
+        surface - surface the defender draws on
         x,y - position
         r - radius
         coulour - colour of ball
@@ -168,7 +171,7 @@ class Defender:
         circle(surface, self.colour, (self.x, self.y) , self.r)
 
     def move(self, dt):
-        ''' Move ball
+        ''' Move defender
         x,y - position
         vx,vy - velocity
         dt - changing of time
@@ -181,6 +184,7 @@ class Defender:
         ''' Check collision with walls
         width_left, width_right - coordinates of vertical walls
         height_left, height_right - coordinates of gorizontal(sorry) walls
+        there is no collision with lower wall - for fun
         '''
 
         if self.x - self.r<= width_left: self.vx *= -1
@@ -191,21 +195,21 @@ class Defender:
 
 
 def checking(pool, pool2):
-    ''' Check ticking the ball
+    ''' Check ticking the ball with defender
     pool - pool of targets
     pool2 - pool of defenders
     '''
     k = True
     sum = 0
     for defender in pool2:
-        for ball in pool:
+        for target in pool:
             if k:
                 x = defender.x
                 y = defender.y
-                if ball.x - ball.r <= x and ball.x + ball.r >= x and ball.y - ball.r <= y and ball.y + ball.r >= y:
-                    sum += ball.points
+                if target.x - target.r <= x and target.x + target.r >= x and target.y - target.r <= y and target.y + target.r >= y:
+                    sum += target.points
                     k = False
-                    pool.remove(ball)
+                    pool.remove(target)
                     pool2.remove(defender)
         k = True
     for defender in pool2:
@@ -215,28 +219,29 @@ def checking(pool, pool2):
 
 
 def checking2(pool):
-    ''' Check ticking the ball
-    x,y - mouse position
+    ''' Check ticking the ball with lower edge
+    pool - pool of targets
     '''
     k = False
-    for ball in pool:
-        if ball.y + ball.r >= 900:
+    for target in pool:
+        if target.y + target.r >= 900:
             k = True
-            #pool.remove(ball)
     return k
 
 def updating_pool(n1 , n2):
-    pool = [Ball()] * (n1 + n2)
+    ''' refilling the pool with targets
+    n1 - number of simple targets
+    n2 - number of updated targets
+    '''
+    pool = [Target()] * (n1 + n2)
     for i in range(n1):
-        pool[i] = Ball()
+        pool[i] = Target()
     for i in range(n1, n2 + n1, 1):
-        pool[i] = Ball_updated()
+        pool[i] = Target_updated()
     return pool
 
-pool = updating_pool(NUMBER_OF_BALLS , NUMBER_OF_BALLS_UPDATED)
-
+pool = updating_pool(NUMBER_OF_TARGETS , NUMBER_OF_UPDATED_TARGETS)
 pool2 = []
-
 
 pygame.display.update()
 clock = pygame.time.Clock()
@@ -251,48 +256,57 @@ while not finished:
     pygame.display.update()
     screen.fill(BLACK)
     rect(screen, WHITE ,( 0, 900, 1200 , 100))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
             pool2.append(Defender(event.pos[0] , event.pos[1]))
 
+    #writing summary of points
     text_points = font.render(str(SUM), True, (0, 100, 0))
     screen.blit(text_points,(100,920))
 
+    #writing time
     text_time = font.render(str(TIME), True, (0, 100, 0))
     screen.blit(text_time,(500,920))
 
+    #m = false - game is not over
     if not m:
         for ball in pool:
+            #moving and drawing simple targets
             ball.draw(screen)
             ball.move( deltat )
             ball.collision(0 , 1200 , 0 , 900)
 
         for ball in pool2:
+            #moving and drawing updated targets
             ball.draw(screen)
             ball.move( deltat )
             ball.collision(0 , 1200 , 0 , 900)
 
 
         SUM += checking(pool, pool2)
-
-        TIME+=1/FPS
+        #updating time
+        TIME += 1 / FPS
         TIME = float('{:.2f}'.format(TIME))
-        SUM -=1/FPS*1000
+        #updating points
+        SUM -= 1 / FPS * 1000
         SUM = float('{:.0f}'.format(SUM))
 
         if checking2(pool):
+            #adding player results to txt
             f = open('winners2.txt','a')
             f.write(NAME + " " + str(SUM) + '\n')
             f.close()
 
+            #loading all results
             with open("winners_data.json", "r") as write_file:
                 loaded = json.load(write_file)
-
+            #adding player results
             loaded.append( {'name': NAME, 'points': SUM } )
 
-
+            #sorting all results
             for i in range(len(loaded) - 1 ):
                 k = i
                 for j in ( i + 1 , len(loaded) - 1):
@@ -302,26 +316,29 @@ while not finished:
                 c = loaded[k]
                 loaded[k] = loaded[i]
                 loaded[i] = c
-
+            #writing results to file
             with open("winners_data.json", "w") as write_file:
                 json.dump(loaded,  write_file)
 
             m = True
-            #finished = True
 
         if len(pool) == 0:
-            pool = [Ball()] * (NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS)
+            #updating pool
+            NUMBER_OF_UPDATED_TARGETS *= 2
+            pool = [Target()] * (NUMBER_OF_UPDATED_TARGETS + NUMBER_OF_TARGETS)
 
-            for i in range(NUMBER_OF_BALLS):
-                pool[i] = Ball()
-                for j in range(rounds):
-                    pool[i].vy *= 1.5
-                    if abs(pool[i].vy) > 50: pool[i].vy = 50
+            for i in range(NUMBER_OF_TARGETS):
+                pool[i] = Target()
+                #for j in range(rounds):
+                    #pool[i].vx *= 1.5
+                    #if abs(pool[i].vy) > 50: pool[i].vy = 50
                 rounds +=  1
 
-            for i in range(NUMBER_OF_BALLS, NUMBER_OF_BALLS_UPDATED + NUMBER_OF_BALLS, 1):
-                pool[i] = Ball_updated()
+
+            for i in range(NUMBER_OF_TARGETS, NUMBER_OF_UPDATED_TARGETS + NUMBER_OF_TARGETS, 1):
+                pool[i] = Target_updated()
     if m:
+            #writing results of 5 best players on the screen
             text = font.render("YOU WON! CONGRATULATIONS!", True, (0, 100, 0))
             screen.blit(text,(200,800))
             with open("winners_data.json", "r") as write_file:
