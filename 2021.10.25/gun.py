@@ -17,7 +17,7 @@ CYAN = (0, 255, 255)
 BLACK = (0, 0, 0)
 WHITE=(255,255,255)
 GREY = (0, 20, 20)
-GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
+GAME_COLORS = [BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
 g = 10
 k = 0.03
@@ -113,8 +113,7 @@ class Gun:
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
-        global balls, bullet
-        bullet += 1
+        global balls
         new_ball = Ball(self.screen)
         new_ball.r += 5
         self.an = math.atan2(-(event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
@@ -160,7 +159,9 @@ class Target:
         """ Инициализация новой цели. """
         self.x = randint(600, 780)
         self.y = randint(300, 550)
-        self.r = randint(2, 50)
+        self.vx = randint(-10,10)
+        self.vy = randint(-10,10)
+        self.r = randint(10, 50)
         self.points = 0
         self.live = 1
         self.color = RED
@@ -171,9 +172,23 @@ class Target:
         r = self.r = randint(2, 50)
         self.live = 1
 
-    def hit(self, points=1):
-        """Попадание шарика в цель."""
-        self.points += points
+    def move(self):
+        self.y += self.vy
+        self.x += self.vx
+
+    def collision(self, width_left, width_right, height_left, height_right):
+        if self.x - self.r <= width_left:
+            self.vx *= -1
+
+        if self.x + self.r >= width_right:
+            self.vx *= -1
+
+        if self.y - self.r <= height_left:
+            self.vy *= -1
+
+        if self.y + self.r >= height_right:
+            self.vy *= -1
+
 
     def draw(self):
         pygame.draw.circle(
@@ -182,29 +197,44 @@ class Target:
             (self.x, self.y),
             self.r
         )
+class Target2(Target):
+    def draw(self):
+        pygame.draw.rect(
+            screen,
+            self.color,
+            (self.x, self.y,
+            self.r, self.r)
+        )
 
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-bullet = 0
 balls = []
 
 clock = pygame.time.Clock()
 gun = Gun(screen)
 target = Target()
+target2 = Target2()
 finished = False
 lenght = 0
 round = 1
+k = False
+k2 = False
 
 while not finished:
     rounds = font.render(str(round), True, (0, 100, 0))
     screen.fill(WHITE)
     screen.blit(rounds,(30,30))
-    for ball in balls:
-        ball.draw()
-    target.draw()
-    for ball in balls:
-        ball.draw()
+
+    if not k:
+        target.draw()
+        target.move()
+        target.collision(0, 800 , 0 , 600 )
+
+    if not k2:
+        target2.draw()
+        target2.move()
+        target2.collision(0, 800 , 0 , 600 )
 
     gun.targetting2()
     clock.tick(FPS)
@@ -222,8 +252,18 @@ while not finished:
     for ball in balls:
         ball.collision(0, 800 , 0 , 600 )
         ball.move()
+        ball.draw()
 
-        if ball.hittest(target):
+        if ball.hittest(target2) and not k2:
+            k2 = True
+            balls.remove(ball)
+
+        if ball.hittest(target) and not k:
+            k = True
+            balls.remove(ball)
+            continue
+
+        if k and k2:
             for i in range(1000):
                 screen.fill(WHITE)
                 text = font.render("YOU WON! TRY AGAIN!", True, (0, 100, 0))
@@ -231,12 +271,13 @@ while not finished:
                 text = font.render(str(lenght) + " BALLS", True, (0, 100, 0))
                 screen.blit(text,(100,400))
                 pygame.display.update()
-            target.live = 0
-            target.hit()
             target.new_target()
-            balls.remove(ball)
+            target2.new_target()
+            k = False
+            k2 = False
             round += 1
             lenght = 0
+
         if ball.y > 700: balls.remove(ball)
     gun.power_up()
     pygame.display.update()
